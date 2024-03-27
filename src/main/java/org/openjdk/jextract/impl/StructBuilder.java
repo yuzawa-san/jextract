@@ -151,6 +151,10 @@ final class StructBuilder extends ClassSourceBuilder implements OutputFactory.Bu
         } else if (Utils.isPointer(varTree.type()) || Utils.isPrimitive(varTree.type())) {
             emitFieldGetter(javaName, varTree, layoutField, offsetField);
             emitFieldSetter(javaName, varTree, layoutField, offsetField);
+            Type.Function f = Utils.getAsFunctionPointer(varTree.type());
+            if (f != null) {
+                emitFunctionalInterfaceGetter(javaName, javaName);
+            }
         } else {
             throw new IllegalArgumentException(STR."Type not supported: \{varTree.type()}");
         }
@@ -182,6 +186,14 @@ final class StructBuilder extends ClassSourceBuilder implements OutputFactory.Bu
     private String kindName() {
         return structTree.kind() == Scoped.Kind.STRUCT ? "struct" : "union";
     }
+	
+	private void emitFunctionalInterfaceGetter(String fiName, String javaName) {
+	        appendIndentedLines(STR."""
+	            public static \{fiName}.Function \{javaName}Function(MemorySegment struct) {
+	                return \{fiName}.invoker(\{javaName}(struct));
+	            }
+	            """);
+	    }
 
     private void emitFieldGetter(String javaName, Declaration.Variable varTree, String layoutField, String offsetField) {
         String segmentParam = safeParameterName(kindName());

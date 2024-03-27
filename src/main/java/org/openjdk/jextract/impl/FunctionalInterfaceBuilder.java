@@ -113,6 +113,10 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
                     throw new AssertionError("should not reach here", ex$);
                 }
             }
+			
+            public static \{className()}.Function invoker(MemorySegment funcPtr\{allocParam}) {
+				return (\{rawOtherArgExprs()}) -> invoke(funcPtr\{allocArg}\{otherArgExprs()});
+            }
             """);
     }
 
@@ -149,6 +153,16 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
         String argsExprs = "";
         if (methodType.parameterCount() > 0) {
             argsExprs += ", " + IntStream.range(0, methodType.parameterCount())
+                    .mapToObj(this::parameterName)
+                    .collect(Collectors.joining(", "));
+        }
+        return argsExprs;
+    }
+	
+    private String rawOtherArgExprs() {
+        String argsExprs = "";
+        if (methodType.parameterCount() > 0) {
+            argsExprs += IntStream.range(0, methodType.parameterCount())
                     .mapToObj(this::parameterName)
                     .collect(Collectors.joining(", "));
         }
