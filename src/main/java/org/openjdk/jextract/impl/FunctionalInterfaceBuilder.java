@@ -63,10 +63,14 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
         fib.classEnd();
     }
 
-    private String emitFunctionalInterface() {
+    static String functionalInterfaceName(String className) {
         // beware of mangling!
-        String fiName = className().toLowerCase().equals("function") ?
+        return className.toLowerCase().equals("function") ?
                 "Function$" : "Function";
+    }
+
+    private String emitFunctionalInterface() {
+        String fiName = functionalInterfaceName(className());
         appendIndentedLines("""
 
             /**
@@ -96,6 +100,7 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
     }
 
     private void emitInvoke() {
+        String fiName = functionalInterfaceName(className());
         boolean needsAllocator = Utils.isStructOrUnion(funcType.returnType());
         String allocParam = needsAllocator ? ", SegmentAllocator alloc" : "";
         String allocArg = needsAllocator ? ", alloc" : "";
@@ -114,13 +119,22 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
                     throw new AssertionError("should not reach here", ex$);
                 }
             }
+
+            /**
+             * Get an implementation of the function interface from a function pointer.
+             */
+            public static %1$s.%8$s function(MemorySegment funcPtr%2$s) {
+                return (%7$s) -> invoke(funcPtr%5$s%6$s);
+            }
             """,
             methodType.returnType().getSimpleName(),
             allocParam,
             paramStr,
             retExpr(),
             allocArg,
-            otherArgExprs());
+            otherArgExprs(),
+            rawOtherArgExprs(),
+            fiName);
     }
 
     // private generation
@@ -153,9 +167,17 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
     }
 
     private String otherArgExprs() {
+        String argsExprs = rawOtherArgExprs();
+        if (argsExprs.isEmpty()) {
+            return argsExprs;
+        }
+        return ", " + argsExprs;
+    }
+	
+    private String rawOtherArgExprs() {
         String argsExprs = "";
         if (methodType.parameterCount() > 0) {
-            argsExprs += ", " + IntStream.range(0, methodType.parameterCount())
+            argsExprs += IntStream.range(0, methodType.parameterCount())
                     .mapToObj(this::parameterName)
                     .collect(Collectors.joining(", "));
         }
