@@ -193,6 +193,8 @@ final class StructBuilder extends ClassSourceBuilder implements OutputFactory.Bu
         boolean needsAllocator = Utils.isStructOrUnion(funcType.returnType());
         String allocParam = needsAllocator ? ", SegmentAllocator alloc" : "";
         String allocArg = needsAllocator ? ", alloc" : "";
+        appendBlankLine();
+        emitFieldDocComment(varTree, "Functional interface getter for field:");
         appendIndentedLines(STR."""
             public static \{className}.\{fiName} \{javaName}Function(MemorySegment struct\{allocParam}) {
                 return \{className}.function(\{javaName}(struct\{allocArg}));

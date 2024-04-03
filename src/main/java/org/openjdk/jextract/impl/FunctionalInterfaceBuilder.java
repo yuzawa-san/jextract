@@ -119,6 +119,9 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
                 }
             }
 
+            /**
+             * Get an implementation of the function interface from a function pointer.
+             */
             public static \{className()}.\{fiName} function(MemorySegment funcPtr\{allocParam}) {
                 return (\{rawOtherArgExprs()}) -> invoke(funcPtr\{allocArg}\{otherArgExprs()});
             }
