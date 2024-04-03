@@ -63,10 +63,14 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
         fib.classEnd();
     }
 
-    private String emitFunctionalInterface() {
+    static String functionalInterfaceName(String className) {
         // beware of mangling!
-        String fiName = className().toLowerCase().equals("function") ?
+        return className.toLowerCase().equals("function") ?
                 "Function$" : "Function";
+    }
+
+    private String emitFunctionalInterface() {
+        String fiName = functionalInterfaceName(className());
         appendIndentedLines(STR."""
 
             /**
@@ -95,6 +99,7 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
     }
 
     private void emitInvoke() {
+        String fiName = functionalInterfaceName(className());
         boolean needsAllocator = Utils.isStructOrUnion(funcType.returnType());
         String allocParam = needsAllocator ? ", SegmentAllocator alloc" : "";
         String allocArg = needsAllocator ? ", alloc" : "";
@@ -113,9 +118,9 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
                     throw new AssertionError("should not reach here", ex$);
                 }
             }
-			
-            public static \{className()}.Function invoker(MemorySegment funcPtr\{allocParam}) {
-				return (\{rawOtherArgExprs()}) -> invoke(funcPtr\{allocArg}\{otherArgExprs()});
+
+            public static \{className()}.\{fiName} function(MemorySegment funcPtr\{allocParam}) {
+                return (\{rawOtherArgExprs()}) -> invoke(funcPtr\{allocArg}\{otherArgExprs()});
             }
             """);
     }
@@ -150,13 +155,11 @@ final class FunctionalInterfaceBuilder extends ClassSourceBuilder {
     }
 
     private String otherArgExprs() {
-        String argsExprs = "";
-        if (methodType.parameterCount() > 0) {
-            argsExprs += ", " + IntStream.range(0, methodType.parameterCount())
-                    .mapToObj(this::parameterName)
-                    .collect(Collectors.joining(", "));
+        String argsExprs = rawOtherArgExprs();
+        if (argsExprs.isEmpty()) {
+            return argsExprs;
         }
-        return argsExprs;
+        return ", " + argsExprs;
     }
 	
     private String rawOtherArgExprs() {

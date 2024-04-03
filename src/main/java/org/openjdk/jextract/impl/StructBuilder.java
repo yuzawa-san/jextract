@@ -151,9 +151,9 @@ final class StructBuilder extends ClassSourceBuilder implements OutputFactory.Bu
         } else if (Utils.isPointer(varTree.type()) || Utils.isPrimitive(varTree.type())) {
             emitFieldGetter(javaName, varTree, layoutField, offsetField);
             emitFieldSetter(javaName, varTree, layoutField, offsetField);
-            Type.Function f = Utils.getAsFunctionPointer(varTree.type());
-            if (f != null) {
-                emitFunctionalInterfaceGetter(javaName, javaName);
+            Type.Function funcType = Utils.getAsFunctionPointer(varTree.type());
+            if (funcType != null) {
+                emitFunctionalInterfaceGetter(javaName, varTree, funcType);
             }
         } else {
             throw new IllegalArgumentException(STR."Type not supported: \{varTree.type()}");
@@ -186,14 +186,19 @@ final class StructBuilder extends ClassSourceBuilder implements OutputFactory.Bu
     private String kindName() {
         return structTree.kind() == Scoped.Kind.STRUCT ? "struct" : "union";
     }
-	
-	private void emitFunctionalInterfaceGetter(String fiName, String javaName) {
-	        appendIndentedLines(STR."""
-	            public static \{fiName}.Function \{javaName}Function(MemorySegment struct) {
-	                return \{fiName}.invoker(\{javaName}(struct));
-	            }
-	            """);
-	    }
+
+    private void emitFunctionalInterfaceGetter(String javaName, Declaration.Variable varTree, Type.Function funcType) {
+        String className = JavaFunctionalInterfaceName.getOrThrow(varTree);
+        String fiName = FunctionalInterfaceBuilder.functionalInterfaceName(className);
+        boolean needsAllocator = Utils.isStructOrUnion(funcType.returnType());
+        String allocParam = needsAllocator ? ", SegmentAllocator alloc" : "";
+        String allocArg = needsAllocator ? ", alloc" : "";
+        appendIndentedLines(STR."""
+            public static \{className}.\{fiName} \{javaName}Function(MemorySegment struct\{allocParam}) {
+                return \{className}.function(\{javaName}(struct\{allocArg}));
+            }
+            """);
+    }
 
     private void emitFieldGetter(String javaName, Declaration.Variable varTree, String layoutField, String offsetField) {
         String segmentParam = safeParameterName(kindName());
