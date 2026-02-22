@@ -142,7 +142,9 @@ public class IncludeHelper {
                 writer.append(lineSep);
                 writer.append("#### Extracted from: " + pathEntries.getKey().toString() + "\n\n");
                 Map<IncludeKind, List<Declaration>> declsByKind = pathEntries.getValue().stream()
-                        .collect(Collectors.groupingBy(IncludeKind::fromDeclaration));
+                        .collect(Collectors.groupingBy(IncludeKind::fromDeclaration,
+                                () -> new EnumMap<>(IncludeKind.class),
+                                Collectors.toList()));
                 int maxLengthOptionCol = pathEntries.getValue().stream().mapToInt(d -> d.name().length()).max().getAsInt();
                 maxLengthOptionCol += 2; // --
                 maxLengthOptionCol += IncludeKind.FUNCTION.optionName().length(); // max option name
