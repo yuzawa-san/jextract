@@ -33,8 +33,10 @@ import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestFilters extends JextractToolRunner {
@@ -69,18 +71,18 @@ public class TestFilters extends JextractToolRunner {
             Path filterH = getInputFilePath("filters.h");
             runNoOuput("--dump-includes", includes.toString(), filterH.toString()).checkSuccess();
             List<String> includeLines = Files.readAllLines(includes);
-            outer: for (FilterKind kind : FilterKind.values()) {
-                String filterLine = kind.filterOption + " " + kind.symbolName;
-                Iterator<String> linesIt = includeLines.iterator();
-                while (linesIt.hasNext()) {
-                    String line = linesIt.next();
-                    if (line.startsWith(filterLine)) {
-                        linesIt.remove();
-                        continue outer;
-                    }
-                }
-                fail("Filter line not found: " + filterLine);
-            }
+            List<String> filteredLines = includeLines.stream().filter(line -> line.startsWith("--")).toList();
+            assertEquals(filteredLines.size(), 9);
+            // These will be in consistent order based on type and symbol name.
+            assertTrue(filteredLines.get(0).startsWith("--include-constant BLUE "));
+            assertTrue(filteredLines.get(1).startsWith("--include-constant GREEN "));
+            assertTrue(filteredLines.get(2).startsWith("--include-constant RED "));
+            assertTrue(filteredLines.get(3).startsWith("--include-constant _constant "));
+            assertTrue(filteredLines.get(4).startsWith("--include-var _global "));
+            assertTrue(filteredLines.get(5).startsWith("--include-function _function "));
+            assertTrue(filteredLines.get(6).startsWith("--include-typedef _typedef "));
+            assertTrue(filteredLines.get(7).startsWith("--include-struct _struct "));
+            assertTrue(filteredLines.get(8).startsWith("--include-union _union "));
         } finally {
             TestUtils.deleteDir(filterOutput);
         }
